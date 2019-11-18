@@ -66,7 +66,7 @@ def TaylorT3_Omega_new(t, tc, eta, M):
     ftal6 = 1.07/2.80
 
 
-    full = theta3*ftaN * (1. \
+    full = theta3*ftaN * (fts1 \
              + fta2*theta2 \
              + fta3*theta3 \
              + fta4*theta4 \
@@ -127,8 +127,8 @@ def TaylorT3_phase(t, tc, eta, M, phi0=0, m=2):
     # 2.5PN
     fta5 = (3.8645/2.1504 - 6.5/25.6 * eta) * np.pi
     # 3PN
-    fta6 = 83.1032450749357/5.7682522275840 - 5.3/4.0 * np.pi*np.pi - 10.7/5.6 * GAMMA \
-        + (-126.510089885/4.161798144 + 2.255/2.048 * np.pi*np.pi) * eta \
+    fta6 = 83.1032450749357/5.7682522275840 - 5.3/4.0 * pi2 - 10.7/5.6 * GAMMA \
+        + (-126.510089885/4.161798144 + 2.255/2.048 * pi2) * eta \
         + 1.54565/18.35008 * eta*eta - 1.179625/1.769472 * eta*eta*eta
 
 
@@ -142,7 +142,7 @@ def TaylorT3_phase(t, tc, eta, M, phi0=0, m=2):
     ftal5 = np.log(theta)
 
 
-    full = ftaN/theta5 * (1. \
+    full = ftaN/theta5 * (fts1 \
              + fta2*theta2 \
              + fta3*theta3 \
              + fta4*theta4 \
