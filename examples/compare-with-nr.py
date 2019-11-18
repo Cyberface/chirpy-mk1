@@ -48,10 +48,8 @@ for k in psi4s.keys():
     mk1 = chirpy_mk1.Mk1(psi4s[k].times_hlm, psi4s[k].q)
 
     # align over time and phase shift
-    # win1 = t1 + 100
-    # win2 = win1 + 500
-    win1 = -500
-    win2 = 60
+    win1 = t1 + 100
+    win2 = win1 + 500
     iNR = IUS(mk1.times, mk1.phase)
     iMk1 = IUS(mk1.times, psi4s[k].hlm_phase)
 
