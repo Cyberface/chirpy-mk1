@@ -60,6 +60,28 @@ def match(h1, h2, times):
 
     return ifft / h1h1 / h2h2 * 4 * dt
 
+def coalign(h1, h2, times, t1=None, t2=None):
+    """
+    h1, h2 = complex
+    uses an ifft to find time and phase shift
+    and returns times+tshift, h1 * rotation
+    """
+    if t1 is None:
+        t1 = times[0]
+    if t2 is None:
+        t2 = times[-1]
+    mask = (times > t1) & (times < 2)
+
+    ma_ts = match(h1[mask], h2[mask], times[mask])
+    max_loc = np.argmax(np.abs(ma_ts))
+    rotation = ma_ts[max_loc] / np.abs(ma_ts[max_loc])
+    dt = times[1] - times[0]
+    time_shift =  max_loc * dt
+    h1_shifted = np.fft.ifft(np.fft.fft(h1)*rotation)
+
+    new_times = times + time_shift
+    return new_times, h1_shifted
+
 def planck_taper(times, t1, t2):
     """times: array of times
     t1. for t<=t1 then return 0
