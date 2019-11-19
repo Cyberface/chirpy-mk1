@@ -1,9 +1,6 @@
 import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
-from scipy.interpolate import InterpolatedUnivariateSpline as IUS
-from scipy.integrate import quad
-from scipy.optimize import minimize
 
 import chirpy_mk1
 from chirpy_mk1.nrutils import Psi4
