@@ -70,7 +70,7 @@ def coalign(h1, h2, times, t1=None, t2=None):
         t1 = times[0]
     if t2 is None:
         t2 = times[-1]
-    mask = (times > t1) & (times < 2)
+    mask = (times > t1) & (times < t2)
 
     ma_ts = match(h1[mask], h2[mask], times[mask])
     max_loc = np.argmax(np.abs(ma_ts))
