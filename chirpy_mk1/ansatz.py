@@ -45,9 +45,14 @@ def analytic_phase_mrd_ansatz(t, t0, b, om_f, offset=0.175, kappa=0.44):
         kappa = kappa.value
     except:
         pass
-    hyper = np.array([mphyp2f1(1, kappa, 1+kappa, 0.5*(1+mptanh((tt-t0)/b))) for tt in t])
-    term1 = np.array([mptanh((tt-t0)/b) for tt in t])
-    phase = offset * t + (1/kappa) * 2**(-1-kappa) * b * (om_f - offset) * hyper * (1 + term1)**kappa
+
+    if type(t) in [int, float]:
+        ts = np.array([t], dtype=np.float64)
+    else:
+        ts = t
+    hyper = np.array([mphyp2f1(1, kappa, 1+kappa, 0.5*(1+mptanh((tt-t0)/b))) for tt in ts], dtype=np.float64)
+    term1 = np.array([mptanh((tt-t0)/b) for tt in ts], dtype=np.float64)
+    phase = offset * ts + (1/kappa) * 2**(-1-kappa) * b * (om_f - offset) * hyper * (1 + term1)**kappa
 
 #     return phase - phase[0]
     return phase
@@ -160,8 +165,8 @@ def amp_mrd_ansatz(t, params):
     fhatdot =  kappa*(1 - tanh_ab**2)*(tanh_ab_over_2_p_05)**kappa/(2*b*(tanh_ab_over_2_p_05))
 
     # normalise so that A0 is peak amp
-    den /= np.max(den)
-    fhatdot /= np.max(fhatdot)
+    # den /= np.max(den)
+    # fhatdot /= np.max(fhatdot)
 
     model = A0*fhatdot * den
 
@@ -249,22 +254,22 @@ def PSF_amp_int(name, eta):
 
 def PSF_amp_mrd(name, eta):
     if name == 'A0':
-        params = dict(a=-0.00138219, b=0.06491347, c=1.12604662, d=5.95713833, e=-4.29388452)
+        params = dict(a=-0.13230411, b=7.38840303, c=42.0703464, d=452.332609, e=-336.085451)
         value = PSF_ansatz(params, eta)
     elif name == 'a1':
-        params = dict(a=0.49149237, b=103.251125, c=-985.061966, d=3453.94730, e=-4333.54645)
+        params = dict(a=0.49126184, b=103.259720, c=-985.164119, d=3454.43062, e=-4334.34133)
         value = PSF_ansatz(params, eta)
     elif name == 'a2':
-        params = dict(a=-7.22437951, b=-160.431492, c=1495.94693, d=-4559.95355, e=4605.42252)
+        params = dict(a=-7.22382530, b=-160.452199, c=1496.19345, d=-4561.12155, e=4607.34592)
         value = PSF_ansatz(params, eta)
     elif name == 'a3':
-        params = dict(a=8.34567037, b=169.639675, c=-1361.28273, d=3389.61604, e=-2116.38087)
+        params = dict(a=8.34501230, b=169.664308, c=-1361.57695, d=3391.01510, e=-2118.69289)
         value = PSF_ansatz(params, eta)
     elif name == 't0':
-        params = dict(a=12.9241996, b=-11.2251343, c=134.809648, d=-1152.57936, e=2624.80008)
+        params = dict(a=12.9240884, b=-11.2209381, c=134.758871, d=-1152.33440, e=2624.38931)
         value = PSF_ansatz(params, eta)
     elif name == 'kappa':
-        params = dict(a=0.05366764, b=0.45798360, c=-5.06312311, d=27.2090801, e=-48.2909123)
+        params = dict(a=0.05366861, b=0.45794648, c=-5.06266379, d=27.2068135, e=-48.2870291)
         value = PSF_ansatz(params, eta)
 
     return value

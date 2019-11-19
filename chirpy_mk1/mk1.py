@@ -114,67 +114,109 @@ class Mk1(object):
 
         self.h = self.amp * np.exp(-1.j * self.phase)
 
-    def amp_func(self, times, eta, t0_ins_int=-200, t0_int_mr=-40):
+    def amp_func(self, times, eta, t0_ins_int=-200, t0_int_mrd=-40):
 
         mask_ins = times <= t0_ins_int
-        mask_int = (times > t0_ins_int) & (times <= t0_int_mr)
-        mask_mr = times > t0_int_mr
+        mask_int = (times > t0_ins_int) & (times <= t0_int_mrd)
+        mask_mrd = times > t0_int_mrd
 
-        amp_ins = amp_ins_ansatz(times[mask_ins], eta, self.params_amp_ins)
-        amp_int = amp_int_ansatz(times[mask_int], self.params_amp_int)
-        amp_mr = amp_mrd_ansatz(times[mask_mr], self.params_amp_mrd)
+        try:
+            amp_ins = amp_ins_ansatz(times[mask_ins], eta, self.params_amp_ins)
+        except:
+            amp_ins = np.array([])
+        try:
+            amp_int = amp_int_ansatz(times[mask_int], self.params_amp_int)
+        except:
+            amp_int = np.array([])
+        try:
+            amp_mr = amp_mrd_ansatz(times[mask_mrd], self.params_amp_mrd)
+        except:
+            amp_mr = np.array([])
 
-#         enforce some level on continuity
-        a0 = amp_ins[-1] - amp_int[0]
+        # enforce some level on continuity
+        # shift int to match ins at t0_ins_int
+        # then shift ins+int to match with mrd at t0_int_mrd
+        amp_ins_t0 = amp_ins_ansatz(t0_ins_int, eta, self.params_amp_ins)
+        amp_int_t0 = amp_int_ansatz(t0_ins_int, self.params_amp_int)
+
+        a0 = amp_ins_t0 - amp_int_t0
         amp_int += a0
-
         amp_ins_int = np.concatenate((amp_ins, amp_int))
 
-        a1 = amp_mr[0] - amp_ins_int[-1]
+        amp_int_t1 = amp_int_ansatz(t0_int_mrd, self.params_amp_int)
+        amp_mrd_t1 = amp_mrd_ansatz(t0_int_mrd, self.params_amp_mrd)
+
+        a1 = amp_mrd_t1 - (amp_int_t1 + a0)
         amp_ins_int += a1
 
         imr_amp = np.concatenate((amp_ins_int, amp_mr))
-#         imr_amp = np.concatenate((amp_ins, amp_int, amp_mr))
 
         return imr_amp
 
-    def freq_func(self, times, eta, t0_ins_int = -500, t0_int_mr = -5):
+    def freq_func(self, times, eta, t0_ins_int = -500, t0_int_mrd = -5):
 
         mask_ins = times <= t0_ins_int
-        mask_int = (times > t0_ins_int) & (times <= t0_int_mr)
-        mask_mr = times > t0_int_mr
+        mask_int = (times > t0_ins_int) & (times <= t0_int_mrd)
+        mask_mrd = times > t0_int_mrd
 
-        freq_ins = freq_ins_ansatz(times[mask_ins], eta, self.params_freq_ins)
-        freq_int = freq_int_ansatz(times[mask_int], self.params_freq_int)
-        freq_mr = freq_mrd_ansatz(times[mask_mr], self.params_freq_mrd)
+        try:
+            freq_ins = freq_ins_ansatz(times[mask_ins], eta, self.params_freq_ins)
+        except:
+            freq_ins = np.array([])
+        try:
+            freq_int = freq_int_ansatz(times[mask_int], self.params_freq_int)
+        except:
+            freq_int = np.array([])
+        try:
+            freq_mrd = freq_mrd_ansatz(times[mask_mrd], self.params_freq_mrd)
+        except:
+            freq_mrd = np.array([])
 
-        imr_freq = np.concatenate((freq_ins, freq_int, freq_mr))
+        imr_freq = np.concatenate((freq_ins, freq_int, freq_mrd))
 
         return imr_freq
 
-    def phase_func(self, times, eta, t0_ins_int = -500, t0_int_mr = -5):
+    def phase_func(self, times, eta, t0_ins_int = -500, t0_int_mrd = -5):
 
         # to get connection correct need to do this +dt
         # and then later not use all the int and the mrd phases
-        dt = times[1] - times[0]
+        # dt = times[1] - times[0]
 
-        mask_ins = times <= t0_ins_int+dt
-        mask_int = (times > t0_ins_int) & (times <= t0_int_mr + dt)
-        mask_mr = times > t0_int_mr
+        mask_ins = times <= t0_ins_int
+        mask_int = (times > t0_ins_int) & (times <= t0_int_mrd)
+        mask_mr = times > t0_int_mrd
 
-        phase_ins = analytic_phase_ins_ansatz(times[mask_ins], eta, **self.params_freq_ins)
-        phase_int = analytic_phase_int_ansatz(times[mask_int], **self.params_freq_int)
-        phase_mrd = analytic_phase_mrd_ansatz(times[mask_mr], **self.params_freq_mrd)
+        try:
+            phase_ins = analytic_phase_ins_ansatz(times[mask_ins], eta, **self.params_freq_ins)
+        except:
+            phase_ins = np.array([])
+        try:
+            phase_int = analytic_phase_int_ansatz(times[mask_int], **self.params_freq_int)
+        except:
+            phase_int = np.array([])
+        try:
+            phase_mrd = analytic_phase_mrd_ansatz(times[mask_mr], **self.params_freq_mrd)
+        except:
+            phase_mrd = np.array([])
 
         # leave ins where it is and connect int and mrd by C(0)
 
-        ins_int = phase_ins[-1] - phase_int[0]
+        phase_ins_t0 = analytic_phase_ins_ansatz(t0_ins_int, eta, **self.params_freq_ins)
+        phase_int_t0 = analytic_phase_int_ansatz(t0_ins_int, **self.params_freq_int)
+
+        phase_int_t1 = analytic_phase_int_ansatz(t0_int_mrd, **self.params_freq_int)
+        phase_mrd_t1 = analytic_phase_mrd_ansatz(t0_int_mrd, **self.params_freq_mrd)
+
+        ins_int = phase_ins_t0 - phase_int_t0
         phase_int += ins_int
 
-        ins_int_mrd = phase_int[-1] - phase_mrd[0]
+        ins_int_mrd = (phase_int_t1+ins_int) - phase_mrd_t1
         phase_mrd += ins_int_mrd
 
-        analytic_imr_phase = np.concatenate((phase_ins[:-1], phase_int[:-1], phase_mrd))
-        analytic_imr_phase -= analytic_imr_phase[0]
+        analytic_imr_phase = np.concatenate((phase_ins, phase_int, phase_mrd))
+
+        # phase aligned at t=0
+        # should change this to be phi_ref option
+        analytic_imr_phase -= analytic_phase_mrd_ansatz(0, **self.params_freq_mrd)
 
         return np.array(analytic_imr_phase, dtype=np.float64)
