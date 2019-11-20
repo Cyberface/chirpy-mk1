@@ -27,7 +27,7 @@ npts_mass_ratio = len(nrfiles)
 
 t1=-3100
 #t1=-500
-t2=60
+t2=100
 
 psi4s = {}
 for k,v in list(nrfiles.items()):
