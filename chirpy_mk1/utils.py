@@ -58,7 +58,34 @@ def match(h1, h2, times):
 
     ifft = np.fft.ifft(np.conj(h1_fft) * h2_fft)
 
-    return ifft / h1h1 / h2h2 * 4 * dt
+    ts = ifft / h1h1 / h2h2 * 4 * dt
+    m = np.max(np.abs(ts))
+
+    return m 
+
+def matched_filter(h1, h2, times):
+    """
+    not tested
+    """
+
+    dt = times[1] - times[0]
+    n = len(times)
+    df = 1.0/(n*dt)
+    norm = 4. * df
+
+    h1_fft = np.fft.fft(h1)
+    h2_fft = np.fft.fft(h2)
+
+    h1h1_sq = np.vdot(h1_fft, h1_fft) * norm
+    h2h2_sq = np.vdot(h2_fft, h2_fft) * norm
+
+    h1h1 = dt * np.sqrt(h1h1_sq)
+
+    ifft = np.fft.ifft(np.conj(h1_fft) * h2_fft)
+
+    snr = ifft / h1h1 * 4 * dt
+
+    return snr 
 
 def coalign(h1, h2, times, t1=None, t2=None):
     """
@@ -72,11 +99,21 @@ def coalign(h1, h2, times, t1=None, t2=None):
         t2 = times[-1]
     mask = (times > t1) & (times < t2)
 
-    ma_ts = match(h1[mask], h2[mask], times[mask])
+    ma_ts = matched_filter(h1[mask], h2[mask], times[mask])
     max_loc = np.argmax(np.abs(ma_ts))
     rotation = ma_ts[max_loc] / np.abs(ma_ts[max_loc])
     dt = times[1] - times[0]
     time_shift =  max_loc * dt
+
+    duration = times[-1] - times[0]
+    # not sure about this
+    # it doesn't seem to work properly
+    # sometimes and I think it's because
+    # when I do the ifft I don't take into
+    # account the cyclic nature
+    if np.abs(time_shift) >= duration/2:
+        time_shift = -duration + time_shift + dt
+
     h1_shifted = np.fft.ifft(np.fft.fft(h1)*rotation)
 
     new_times = times + time_shift

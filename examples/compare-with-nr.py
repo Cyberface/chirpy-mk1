@@ -6,6 +6,9 @@ import chirpy_mk1
 from chirpy_mk1.nrutils import Psi4
 from chirpy_mk1.utils import match, coalign
 
+import pycbc.types
+import pycbc.waveform.utils
+
 # get data
 nrfiles = dict(
     q1='/Users/spx8sk/work/data/SXS_BBH_0180_Res4.h5',
@@ -19,7 +22,7 @@ nrfiles = dict(
 ell = 2
 mm = 2
 
-npts_time = 1000*6
+npts_time = 1000*10
 npts_mass_ratio = len(nrfiles)
 
 t1=-3100
@@ -35,17 +38,24 @@ for k in psi4s.keys():
     # generate mk1 waveform
     mk1 = chirpy_mk1.Mk1(psi4s[k].times_hlm, psi4s[k].q)
 
-    times_shifted, h1_shifted = coalign(mk1.h, psi4s[k].hlm, mk1.times)
+    mk1_ts = pycbc.types.TimeSeries(np.real(mk1.h), delta_t=mk1.times[1] - mk1.times[0])
+    nr_ts = pycbc.types.TimeSeries(np.real(psi4s[k].hlm), delta_t=psi4s[k].times_hlm[1] - psi4s[k].times_hlm[0])
+
+    mk1_ts, nr_ts = pycbc.waveform.utils.coalign_waveforms(mk1_ts, nr_ts)
+
+    _, mk1_idx = mk1_ts.abs_max_loc()
+    mk1_shift = mk1_ts.sample_times[mk1_idx]
 
     fig, axes = plt.subplots(1, 2, figsize=(14, 4))
-    axes[0].plot(mk1.times, np.real(psi4s[k].hlm), label='NR')
-    axes[0].plot(times_shifted, np.real(h1_shifted), ls='--', label='Mk1')
+    axes[0].plot(nr_ts.sample_times - mk1_shift, nr_ts, label='NR')
+    axes[0].plot(mk1_ts.sample_times - mk1_shift, mk1_ts, ls='--', label='Mk1')
     axes[0].legend
     axes[0].set_title(k)
+    axes[0].set_xlim(t1, t2)
 
-    axes[1].plot(mk1.times, np.real(psi4s[k].hlm), label='NR')
-    axes[1].plot(times_shifted, np.real(h1_shifted), ls='--', label='Mk1')
-    axes[1].set_xlim(-100,60)
+    axes[1].plot(nr_ts.sample_times - mk1_shift, nr_ts, label='NR')
+    axes[1].plot(mk1_ts.sample_times - mk1_shift, mk1_ts, ls='--', label='Mk1')
+    axes[1].set_xlim(-200,100)
 
     for ax in axes:
         ax.set_xlabel('t/M')
@@ -53,6 +63,6 @@ for k in psi4s.keys():
 
     plt.savefig('wf-compare-nr-{}.png'.format(k))
     plt.close()
-    the_match = np.max(np.abs(match(mk1.h, psi4s[k].hlm, mk1.times)))
+    the_match =match(mk1.h, psi4s[k].hlm, mk1.times)
 
     print("match = {}".format(the_match))
