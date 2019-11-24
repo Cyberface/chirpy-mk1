@@ -99,15 +99,13 @@ freq_ins = freq_ins_ansatz(times, eta, params_freq_ins)
 
 # compute imr
 mk1=chirpy_mk1.Mk1(times, q)
+mk1_freq = mk1.freq_func(mk1.times)
 
 plt.figure()
 plt.plot(times, freq_ins, label='ins only', c='C0')
-plt.plot(mk1.times, mk1.freq, label='imr', c='C1')
+plt.plot(mk1.times, mk1_freq, label='imr', c='C1')
 plt.axvline(root_ins, c='C0', ls='--')
 plt.axvline(root_imr, c='C1', ls='--')
 plt.axhline(f_min, c='k', ls='--')
 plt.legend()
 plt.show()
-
-
-

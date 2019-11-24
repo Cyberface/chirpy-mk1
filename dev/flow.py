@@ -92,10 +92,10 @@ toff = pn_t_of_f(freq_ins, params_freq_ins['tc'], eta)
 
 # full imr
 mk1 = chirpy_mk1.Mk1(times, q)
-
+mk1_freq = mk1.freq_func(mk1.times)
 
 plt.figure()
-plt.plot(mk1.freq, mk1.times-mk1.times[0], label='imr')
+plt.plot(mk1_freq, mk1.times-mk1.times[0], label='imr')
 plt.plot(freq_ins, (toff-toff[0]), label='estimated')
 plt.plot(freq_ins, times-times[0], label='real', ls='--')
 plt.legend()
@@ -108,9 +108,3 @@ plt.show()
 #plt.xlabel('t/M')
 #plt.ylabel(r'$M \omega_{22}(t)$')
 #plt.show()
-
-
-
-
-
-
