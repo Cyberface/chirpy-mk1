@@ -1,4 +1,4 @@
-# from scipy.special import hyp2f1
+from scipy.special import hyp2f1
 from mpmath import mp
 from mpmath import hyp2f1 as mphyp2f1
 from mpmath import tanh as mptanh
@@ -50,10 +50,52 @@ def analytic_phase_mrd_ansatz(t, t0, b, om_f, offset=0.175, kappa=0.44):
         ts = np.array([t], dtype=np.float64)
     else:
         ts = t
-    hyper = np.array([mphyp2f1(1, kappa, 1+kappa, 0.5*(1+mptanh((tt-t0)/b))) for tt in ts], dtype=np.float64)
-    term1 = np.array([mptanh((tt-t0)/b) for tt in ts], dtype=np.float64)
-    phase = offset * ts + (1/kappa) * 2**(-1-kappa) * b * (om_f - offset) * hyper * (1 + term1)**kappa
 
+    term1 = np.array([1+mptanh((tt-t0)/b) for tt in ts], dtype=np.float64)
+    hyper = np.array([mphyp2f1(1, kappa, 1+kappa, 0.5*(t1)) for t1 in term1], dtype=np.float64)
+    phase = offset * ts + (1/kappa) * 2**(-1-kappa) * b * (om_f - offset) * hyper * term1**kappa
+
+#     return phase - phase[0]
+    return phase
+
+def analytic_phase_mrd_ansatz_approx(t, t0, b, om_f, offset=0.175, kappa=0.44, tc=40):
+    """
+    This is an optimised and approximation to the real
+    'analytic_phase_mrd_ansatz' function.
+    After a time of 'tc' we continue the phase using the same slope.
+    This is to avoid evaluating the computationally expensive
+    hyp2f1 function at late times
+    """
+    try:
+        kappa = kappa.value
+    except:
+        pass
+
+    if type(t) in [int, float]:
+        ts = np.array([t], dtype=np.float64)
+    else:
+        ts = t
+
+    phase = np.zeros(len(ts))
+
+    mask = ts <= tc
+    mask2 = ts > tc
+
+    term1 = 1. + np.tanh((ts[mask]-t0)/b)
+    hyper = hyp2f1(1, kappa, 1+kappa, 0.5*term1)
+    phase[mask] = offset * ts[mask] + (1/kappa) * 2**(-1-kappa) * b * (om_f - offset) * hyper * term1**kappa
+
+    # after a time 'tc' we simply continue the phase
+    # with the same slope at 'tc'
+    dt = ts[1] - ts[0]
+    p0 = phase[mask][-2]
+    p1 = phase[mask][-1]
+    dp = p1 - p0
+    m = dp/dt
+    c = p0 - m * tc
+
+    # mask2 corresponds to times after 'tc'
+    phase[mask2] = ts[mask2] * m + c
 #     return phase - phase[0]
     return phase
 

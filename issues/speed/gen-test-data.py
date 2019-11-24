@@ -77,7 +77,7 @@ if __name__ == "__main__":
             delta_t = 1./8192,
             f_lower=20,
             t1=None,
-            t2=100
+            t2=400
             )
 
     # derived parameters

@@ -6,6 +6,8 @@ from .ansatz import freq_ins_ansatz, freq_int_ansatz, freq_mrd_ansatz
 from .ansatz import analytic_phase_ins_ansatz, analytic_phase_int_ansatz
 from .ansatz import analytic_phase_mrd_ansatz
 
+from .ansatz import analytic_phase_mrd_ansatz_approx
+
 import numpy as np
 from scipy import optimize
 import phenom
@@ -324,7 +326,8 @@ class Mk1(object):
         except:
             phase_int = np.array([])
         try:
-            phase_mrd = analytic_phase_mrd_ansatz(times[mask_mr], **self.params_freq_mrd)
+            # phase_mrd = analytic_phase_mrd_ansatz(times[mask_mr], **self.params_freq_mrd)
+            phase_mrd = analytic_phase_mrd_ansatz_approx(times[mask_mr], **self.params_freq_mrd)
         except:
             phase_mrd = np.array([])
 
