@@ -38,5 +38,5 @@ funcsmean = np.mean(funcsdata)
 chrpstd = np.std(chrpdata)
 funcsstd = np.std(funcsdata)
 
-print('chirpy_mk1 mean time (in s): {:0.5f} ± {:1.3f}'.format(np.mean(chrpmean,chrpstd))
-print('parallel mean time (in s): {:0.5f} ± {:1.3f}'.format(funcsmean,funcsstd)))
+print('chirpy_mk1 mean time (in s): {:0.5f} ± {:1.3f}'.format(chrpmean,chrpstd))
+print('parallel mean time (in s): {:0.5f} ± {:1.3f}'.format(funcsmean,funcsstd))
