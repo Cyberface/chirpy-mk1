@@ -31,5 +31,12 @@ reruns = 10
 chrpdata = np.array(timeit.repeat(chrprun,globals=globals(),number=iterations,repeat=reruns))/100
 funcsdata = np.array(timeit.repeat(funcsrun,globals=globals(),number=iterations,repeat=reruns))/100
 
-print('chirpy_mk1 mean time (in s): {}'.format(np.mean(chrpdata)))
-print('parallel mean time (in s): {}'.format(np.mean(funcsdata)))
+
+chrpmean = np.mean(chrpdata)
+funcsmean = np.mean(funcsdata)
+
+chrpstd = np.std(chrpdata)
+funcsstd = np.std(funcsdata)
+
+print('chirpy_mk1 mean time (in s): {:0.5f} ± {:1.3f}'.format(np.mean(chrpmean,chrpstd))
+print('parallel mean time (in s): {:0.5f} ± {:1.3f}'.format(funcsmean,funcsstd)))
