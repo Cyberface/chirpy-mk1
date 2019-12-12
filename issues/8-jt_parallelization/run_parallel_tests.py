@@ -9,7 +9,7 @@ eta = 1./(1. + q)**2
 times = np.arange(-1000.,-500.,.001)
 
 freq_inc_tc = PSF_freq_ins('tc',eta)
-req_inc_b = PSF_freq_ins('b',eta)
+freq_inc_b = PSF_freq_ins('b',eta)
 freq_inc_c = PSF_freq_ins('c',eta)
 amp_a0 = PSF_amp_ins('a0', eta)
 amp_a1 = PSF_amp_ins('a1', eta)
