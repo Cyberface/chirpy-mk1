@@ -16,6 +16,8 @@ import phenom
 
 import math
 
+from numba import vectorize
+
 def setup_ins_coeffs(eta):
     freq_inc_tc = PSF_freq_ins('tc',eta)
     freq_inc_b = PSF_freq_ins('b',eta)
@@ -40,17 +42,24 @@ def setup_ins_coeffs(eta):
 def mk1_amp_ins(times, eta, params_amp_ins):
     return amp_ins_ansatz(times, eta, params_amp_ins)
 
-# times = np.linspace(-1000, -500, 100000)
+times = np.linspace(-1000, -500, 10000)
 # times = np.arange(-1000, -500, 1./2048/4)
-# eta = np.float64(0.25)
-# params_amp_ins = setup_ins_coeffs(eta)
+eta = np.float64(0.25)
+params_amp_ins = setup_ins_coeffs(eta)
 
+tc = params_amp_ins['tc']
+a0 = params_amp_ins['a0']
+a1 = params_amp_ins['a1']
+b = params_amp_ins['b']
+c = params_amp_ins['c']
+
+target = 'cuda'
 
 ####### new numba functions
 
 # @njit
 # @njit(['float64[:](float64[:],float64,float64,float64)'])
-@vectorize(['float64(float64,float64,float64,float64)'])
+@vectorize(['float64(float64,float64,float64,float64)'], target=target)
 def numba_vec_TaylorT3_Omega_new(t, tc, eta, M):
 
 #     Msec = Msun_to_sec(M)
@@ -108,7 +117,7 @@ def numba_vec_TaylorT3_Omega_new(t, tc, eta, M):
 
     return full * 2 * math.pi # 2pi to go from freq to angular freq
 
-@vectorize(['float64(float64,float64,float64,float64,float64)'])
+@vectorize(['float64(float64,float64,float64,float64,float64)'], target=target)
 def numba_vec_freq_ins_ansatz(t, eta, tc, b, c):
 #     tc = params['tc']
 #     b = params['b']
@@ -124,7 +133,7 @@ def numba_vec_freq_ins_ansatz(t, eta, tc, b, c):
 
     return model
 
-@vectorize(['float64(float64,float64)'])
+@vectorize(['float64(float64,float64)'], target=target)
 def numba_vec_Hhat22_x(x, eta):
 
 #     xarr = np.zeros(6, dtype=np.complex128)
@@ -151,7 +160,7 @@ def numba_vec_Hhat22_x(x, eta):
 
     return pre * abs(pn) * x
 
-@vectorize(['float64(float64,float64,float64,float64,float64,float64,float64)'])
+@vectorize(['float64(float64,float64,float64,float64,float64,float64,float64)'], target=target)
 def numba_vec_amp_ins_ansatz(t, eta, tc, a0, a1, b, c):
     tau = (tc-t)
     
@@ -168,4 +177,12 @@ def numba_vec_amp_ins_ansatz(t, eta, tc, a0, a1, b, c):
 
     return model
 
+import time
+
+t1 = time.time()
 amp_numba_vec = numba_vec_amp_ins_ansatz(times, eta, tc, a0, a1, b, c)
+t2 = time.time()
+
+
+print('took = {}'.format(t2-t1))
+
