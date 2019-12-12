@@ -1,0 +1,197 @@
+from numba import vectorize,float64,jit
+import numpy as np
+import math
+from chirpy_mk1.ansatz import PSF_freq_ins, PSF_freq_int, PSF_freq_mrd
+from chirpy_mk1.ansatz import PSF_amp_ins, PSF_amp_int, PSF_amp_mrd
+from chirpy_mk1.ansatz import amp_ins_ansatz, amp_int_ansatz, amp_mrd_ansatz
+import matplotlib.pyplot as plt
+from chirpy_mk1.utils import G_Newt, c_ls, MSUN_SI, MTSUN_SI, MRSUN_SI, PC_SI, GAMMA
+
+def setup_ins_coefficients(eta):    
+    params_amp_ins={}
+    freq_inc_tc = PSF_freq_ins('tc',eta)
+    freq_inc_b = PSF_freq_ins('b',eta)
+    freq_inc_c = PSF_freq_ins('c',eta)
+    params_amp_ins.update({
+    'a0': PSF_amp_ins('a0', eta),
+    'a1': PSF_amp_ins('a1', eta)
+    })
+
+# amplitude ins model depends on freq ins model
+    params_amp_ins.update({
+    'tc':freq_inc_tc,
+    'b':freq_inc_b,
+    'c':freq_inc_c
+    })
+    params_freq_ins={}
+    params_freq_ins.update({
+    'tc':freq_inc_tc,
+    'b':freq_inc_b,
+    'c':freq_inc_c
+    })
+    return params_amp_ins
+    
+a0=setup_ins_coefficients(eta)['a0']
+a1=setup_ins_coefficients(eta)['a1']
+tc=setup_ins_coefficients(eta)['tc']
+b=setup_ins_coefficients(eta)['b']
+c=setup_ins_coefficients(eta)['c']
+
+@jit
+# change jit -> cuda.jit
+def TaylorT3_Omega_numba(t, tc, eta, M):
+    """
+    22 mode angular GW frequency
+    equation 7 in 0901.2437
+
+    3.5PN term from https://arxiv.org/pdf/gr-qc/0610122.pdf and https://arxiv.org/pdf/0907.0700.pdf
+    and this too apparently https://arxiv.org/pdf/gr-qc/0406012.pdf?
+
+    https://git.ligo.org/lscsoft/lalsuite/blob/master/lalsimulation/src/LALSimInspiralTaylorT3.c
+
+    https://git.ligo.org/lscsoft/lalsuite/blob/master/lalsimulation/src/LALSimInspiralPNCoefficients.c
+
+    t: time
+    tc: coalescence time
+    eta: symmetric mass ratio
+    M: total mass (Msun)
+    """
+
+#    Msec = Msun_to_sec(M)
+    Msec = M
+
+    pi2 = np.pi*np.pi
+
+    c1 = eta/(5.*Msec)
+
+    td = c1 * (tc - t)
+
+#     td = np.sqrt(td**2 + 1)
+
+    theta = td**(-1./8.) # -1./8. = -0.125
+
+    theta2 = theta*theta
+    theta3 = theta2*theta
+    theta4 = theta3*theta
+    theta5 = theta4*theta
+    theta6 = theta5*theta
+    theta7 = theta6*theta
+
+    # pre factor
+    ftaN = 1. / ( 8. * np.pi * Msec  )
+    # 0PN
+    fts1 = 1.
+    # 0.5PN = 0 in GR
+    # 1PN
+    fta2 = 7.43/26.88 + 1.1/3.2 * eta
+    # 1.5PN
+    fta3 = -3./10. * np.pi
+    # 2PN
+    fta4 = 1.855099/14.450688 + 5.6975/25.8048 * eta + 3.71/20.48 * eta*eta
+    # 2.5PN
+    fta5 = (-7.729/21.504 + 1.3/25.6 * eta) * np.pi
+    # 3PN
+    fta6 = -7.20817631400877/2.88412611379200 + 5.3/20.0 * pi2 + 1.07/2.80 * GAMMA  \
+           + (25.302017977/4.161798144 - 4.51/20.48 * pi2) * eta \
+           - 3.0913/183.5008 * eta*eta + 2.35925/17.69472 * eta*eta*eta
+
+    # 3.5PN
+    fta7 = (-1.88516689/4.33520640 - 9.7765/25.8048 * eta + 1.41769/12.90240 * eta*eta) * np.pi
+
+    # 3PN log term
+    ftal6 = 1.07/2.80
+
+
+    full = theta3*ftaN * (fts1 \
+             + fta2*theta2 \
+             + fta3*theta3 \
+             + fta4*theta4 \
+             + fta5*theta5 \
+             + (fta6 + ftal6*np.log(2.*theta))*theta6 \
+             + fta7*theta7)
+
+    return full * 2 * np.pi # 2pi to go from freq to angular freq
+    
+@jit
+# change jit -> cuda.jit
+def freq_ins_ansatz_new(t, eta, tc,b,c):
+    """
+    this is the frequency inspiral ansatz.
+    I needed a separate function so that I could use it in the amplitude inspiral model
+    """
+
+    tc = tc
+    b = b
+    c = c
+    M = 1
+
+    tau = eta * (tc - t) / (5*M)
+    model = (TaylorT3_Omega_numba(t, tc, eta, M) + b*tau**(-9./8.) + c*tau**(-10./8.))
+
+    return model
+
+@jit
+# change jit -> cuda.jit
+def Hhat22_x(x, eta):
+    """
+    https://arxiv.org/pdf/0802.1249.pdf - eq. 9.4a
+
+    here we leave the expression to depend on the post-newtonian
+    parameter 'x' so that you can choose how to calculate it.
+    e.g., from PN like TaylorT3 or from the model which
+    is TaylorT3 + corrections
+    """
+
+#    xarr = np.zeros(6, dtype=np.complex128)
+    xarr = [0+0*1j,0+0*1j,0+0*1j,0+0*1j,0+0*1j,0+0*1j]
+
+    C = 0.577216 # is the Euler constant
+
+    xarr[0] = 1.
+    xarr[1] = -107./42 + 55*eta/42
+    xarr[2] = 2.*math.pi
+    xarr[3] = -2173./1512 - 1069.*eta/216 + 2047.*eta**2/1512
+    xarr[4] = (-107*math.pi/21 - 24.*1.j*eta + 34.*math.pi*eta/21) # there is an i... not sure what to do...
+
+    x5a = 27027409./646800 - 856.*C/105 + 428*1.j*math.pi/105 + 2.*math.pi**2/3
+    x5b = (-278185./33264 + 41*math.pi**2/96)*eta - 20261.*eta**2/2772 + 114635.*eta**3/99792
+
+    x5log =  - 428.*math.log(16*x)/105
+
+    xarr[5] = (x5a) + x5b # there is an i...  not sure what to do...
+
+    pre = np.sqrt(16.*math.pi/5) * 2 * eta
+
+    pn = xarr[0] + x*xarr[1] + x**(3/2.)*xarr[2] + x**2*xarr[3] + x**(5/2.)*xarr[4] + x**3*(xarr[5] + x5log)
+
+    return pre * abs(pn) * x
+    
+@vectorize(['float64(float64,float64,float64,float64,float64,float64,float64)']) 
+# add target=cuda here
+def amp_ins_ansatz_new(t, eta, a0,a1,tc,b,c):
+
+    tc = tc
+    a0 = a0
+    a1 = a1
+    b = b
+    c = c
+
+    tau = (tc-t)
+
+
+    GW22AngFreq = freq_ins_ansatz_new(t, eta, tc,b,c)
+    OrgAngFreq = GW22AngFreq / 2.
+
+    M = 1
+    x = (M*OrgAngFreq)**(2./3)
+
+    T3amp = Hhat22_x(x, eta)
+
+    model = T3amp + a0*tau**(-9./8.) + a1*tau**(-10./8.)
+
+    return model
+    
+#times=np.linspace(-3000,-500,500000)
+#eta = 0.25
+
+#amp_ins_numba = amp_ins_ansatz_new(times,eta,a0,a1,tc,b,c)
