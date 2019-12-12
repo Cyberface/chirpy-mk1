@@ -8,6 +8,11 @@ mp.dps=64
 
 import numpy as np
 
+try:
+    import cupy as xp
+except ImportError:
+    xp = np
+
 from .pn import TaylorT3_phase, TaylorT3_Omega_new, Hhat22_x
 
 def analytic_phase_ins_ansatz(t, eta, tc, b, c, M=1, phi0=0, m=2):
@@ -72,7 +77,7 @@ def analytic_phase_mrd_ansatz_approx(t, t0, b, om_f, offset=0.175, kappa=0.44, t
         pass
 
     if type(t) in [int, float]:
-        ts = np.array([t], dtype=np.float64)
+        ts = np.array([t], dtype=xp.float64)
     else:
         ts = t
 
@@ -83,6 +88,50 @@ def analytic_phase_mrd_ansatz_approx(t, t0, b, om_f, offset=0.175, kappa=0.44, t
 
     term1 = 1. + np.tanh((ts[mask]-t0)/b)
     hyper = hyp2f1(1, kappa, 1+kappa, 0.5*term1)
+    phase[mask] = offset * ts[mask] + (1/kappa) * 2**(-1-kappa) * b * (om_f - offset) * hyper * term1**kappa
+
+    # after a time 'tc' we simply continue the phase
+    # with the same slope at 'tc'
+    dt = ts[1] - ts[0]
+    p0 = phase[mask][-2]
+    p1 = phase[mask][-1]
+    dp = p1 - p0
+    m = dp/dt
+    c = p0 - m * tc
+
+    # mask2 corresponds to times after 'tc'
+    phase[mask2] = ts[mask2] * m + c
+#     return phase - phase[0]
+    return phase
+
+def analytic_phase_mrd_ansatz_approx_gpu(t, t0, b, om_f, offset=0.175, kappa=0.44, tc=40):
+    """
+    This is an optimised and approximation to the real
+    'analytic_phase_mrd_ansatz' function.
+    After a time of 'tc' we continue the phase using the same slope.
+    This is to avoid evaluating the computationally expensive
+    hyp2f1 function at late times
+    """
+    try:
+        kappa = kappa.value
+    except:
+        pass
+
+    if type(t) in [int, float]:
+        ts = xp.array([t], dtype=xp.float64)
+    else:
+        ts = t
+
+    phase = xp.zeros(len(ts))
+
+    mask = ts <= tc
+    mask2 = ts > tc
+
+    #term1 = 1. + np.tanha((xp.asnumpy(ts[mask])-t0)/b)
+    term1 = 1. + xp.tanh((ts[mask]-t0)/b)
+    hyper = hyp2f1(1, kappa, 1+kappa, xp.asnumpy(0.5*term1))
+    hyper = xp.asarray(hyper)
+    #phase[mask] = offset * ts[mask] + (1/kappa) * 2**(-1-kappa) * b * (om_f - offset) * hyper * xp.asarray(term1)**kappa
     phase[mask] = offset * ts[mask] + (1/kappa) * 2**(-1-kappa) * b * (om_f - offset) * hyper * term1**kappa
 
     # after a time 'tc' we simply continue the phase
