@@ -25,11 +25,11 @@ params = {
 chrprun = "chirpy_mk1.amp_ins_ansatz(times,eta,params)"
 funcsrun = "funcs.amp_ins_ansatz(times, eta, freq_inc_tc, amp_a0, amp_a1, freq_inc_b, freq_inc_c)"
 
-iterations = 100
-reruns = 100
+iterations = 10
+reruns = 10
 
-chrpdata = timeit.repeat(chrprun,globals=globals(),number=iterations,repeat=reruns)/100
-funcsdata = timeit.repeat(funcsrun,globals=globals(),number=iterations,repeat=reruns)/100
+chrpdata = np.array(timeit.repeat(chrprun,globals=globals(),number=iterations,repeat=reruns))/100
+funcsdata = np.array(timeit.repeat(funcsrun,globals=globals(),number=iterations,repeat=reruns))/100
 
 print('chirpy_mk1 mean time (in s): {}'.format(np.mean(chrpdata)))
 print('parallel mean time (in s): {}'.format(np.mean(funcsdata)))
