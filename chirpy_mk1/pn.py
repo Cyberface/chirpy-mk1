@@ -21,7 +21,7 @@ def TaylorT3_Omega_new(t, tc, eta, M):
     M: total mass (Msun)
     """
 
-    Msec = Msun_to_sec(M)
+    #Msec = Msun_to_sec(M)
     Msec = M
 
     pi2 = np.pi*np.pi
@@ -32,7 +32,8 @@ def TaylorT3_Omega_new(t, tc, eta, M):
 
 #     td = np.sqrt(td**2 + 1)
 
-    theta = td**(-1./8.) # -1./8. = -0.125
+    #theta = td**(-1./8.) # -1./8. = -0.125
+    theta = td**(-0.125) # -1./8. = -0.125
 
     theta2 = theta*theta
     theta3 = theta2*theta
@@ -181,7 +182,15 @@ def Hhat22_x(x, eta):
 
     pre = np.sqrt(16.*np.pi/5) * 2 * eta
 
-    pn = xarr[0] + x*xarr[1] + x**(3/2.)*xarr[2] + x**2*xarr[3] + x**(5/2.)*xarr[4] + x**3*(xarr[5] + x5log)
+    x1 = x
+    x2 = x1*x1
+    x3 = x2*x1
+    x12 = np.sqrt(x)
+    x32 = x1 * x12
+    x52 = x2 * x12
+
+    #pn = xarr[0] + x*xarr[1] + x**(3/2.)*xarr[2] + x**2*xarr[3] + x**(5/2.)*xarr[4] + x**3*(xarr[5] + x5log)
+    pn = xarr[0] + x1*xarr[1] + x32*xarr[2] + x2*xarr[3] + x52*xarr[4] + x3*(xarr[5] + x5log)
 
     return pre * pn * x
 
