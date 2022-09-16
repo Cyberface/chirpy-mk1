@@ -38,7 +38,7 @@ lalsuite==6.62
 lazy-object-proxy==1.4.3
 ligo-segments==1.2.0
 lscsoft-glue==2.0.0
-Mako==1.1.0
+Mako==1.2.2
 MarkupSafe==1.1.1
 matplotlib==3.1.1
 mccabe==0.6.1
